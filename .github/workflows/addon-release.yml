@@ -1,0 +1,34 @@
+---
+name: KiCAD Addon Release
+on:  # yamllint disable-line rule:truthy
+  release:
+    types:
+      - published
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get latest tag
+        uses: actions-ecosystem/action-release-label@v1
+        id: latest-tag
+
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Create archive
+        run: python ./bin/release.py ${{steps.latest-tag.outputs.tag }}
+
+      - name: Upload files to a GitHub release
+        uses: svenstaro/upload-release-action@2.7.0
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file_glob: true
+          file: ./build/release/*
+          overwrite: true
+          tag: ${{ steps.latest-tag.outputs.tag }}
+
+      # Commit changed packages and repository files
+      - name: Commit updated json files
+        uses: stefanzweifel/git-auto-commit-action@v4
